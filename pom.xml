@@ -26,6 +26,7 @@
         <mc.version>1.21.4-R0.1-SNAPSHOT</mc.version>
         <adventure.version>4.16.0</adventure.version>
         <placeholder-api.version>2.11.7</placeholder-api.version>
+        <jedis.version>4.4.8</jedis.version>
     </properties>
 
     <repositories>
@@ -93,6 +94,13 @@
                 <groupId>com.github.rarehyperionyt</groupId>
                 <artifactId>chatgames-api</artifactId>
                 <version>0.1.1</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>redis.clients</groupId>
+                <artifactId>jedis</artifactId>
+                <version>${jedis.version}</version>
                 <scope>compile</scope>
             </dependency>
         </dependencies>
