@@ -75,19 +75,21 @@ public final class DistributedGameService {
 
     private static final String TIMEOUT_SCRIPT =
             "if redis.call('HGET', KEYS[1], 'status') ~= 'active' then return 0; end; " +
+            "if redis.call('HGET', KEYS[1], 'id') ~= ARGV[1] then return 0; end; " +
             "local expiresAt = tonumber(redis.call('HGET', KEYS[1], 'expiresAt') or '0'); " +
-            "local now = tonumber(ARGV[1]); " +
+            "local now = tonumber(ARGV[2]); " +
             "if expiresAt <= 0 or now < expiresAt then return 0; end; " +
-            "redis.call('HSET', KEYS[1], 'status', 'ended', 'endedAt', ARGV[1], 'endReason', 'TIMEOUT'); " +
-            "redis.call('PEXPIRE', KEYS[1], ARGV[2]); " +
-            "redis.call('PUBLISH', KEYS[2], ARGV[3]); " +
+            "redis.call('HSET', KEYS[1], 'status', 'ended', 'endedAt', ARGV[2], 'endReason', 'TIMEOUT'); " +
+            "redis.call('PEXPIRE', KEYS[1], ARGV[3]); " +
+            "redis.call('PUBLISH', KEYS[2], ARGV[4]); " +
             "return 1;";
 
     private static final String STOP_SCRIPT =
             "if redis.call('HGET', KEYS[1], 'status') ~= 'active' then return 0; end; " +
-            "redis.call('HSET', KEYS[1], 'status', 'ended', 'endedAt', ARGV[1], 'endReason', 'COMMAND'); " +
-            "redis.call('PEXPIRE', KEYS[1], ARGV[2]); " +
-            "redis.call('PUBLISH', KEYS[2], ARGV[3]); " +
+            "if redis.call('HGET', KEYS[1], 'id') ~= ARGV[1] then return 0; end; " +
+            "redis.call('HSET', KEYS[1], 'status', 'ended', 'endedAt', ARGV[2], 'endReason', 'COMMAND'); " +
+            "redis.call('PEXPIRE', KEYS[1], ARGV[3]); " +
+            "redis.call('PUBLISH', KEYS[2], ARGV[4]); " +
             "return 1;";
 
     private final ChatGamesCore plugin;
@@ -252,7 +254,7 @@ public final class DistributedGameService {
                     jedis.eval(
                             STOP_SCRIPT,
                             Arrays.asList(currentKey(), eventsChannel()),
-                            Arrays.asList(String.valueOf(System.currentTimeMillis()), String.valueOf(STATE_CLEANUP_MILLIS), event)
+                            Arrays.asList(snapshot.gameId(), String.valueOf(System.currentTimeMillis()), String.valueOf(STATE_CLEANUP_MILLIS), event)
                     );
                 } catch (final Exception exception) {
                     logRedisFailure("stop", exception);
@@ -442,7 +444,7 @@ public final class DistributedGameService {
         jedis.eval(
                 TIMEOUT_SCRIPT,
                 Arrays.asList(this.currentKey(), this.eventsChannel()),
-                Arrays.asList(String.valueOf(System.currentTimeMillis()), String.valueOf(STATE_CLEANUP_MILLIS), event)
+                Arrays.asList(snapshot.gameId(), String.valueOf(System.currentTimeMillis()), String.valueOf(STATE_CLEANUP_MILLIS), event)
         );
     }
 
